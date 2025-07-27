@@ -55,13 +55,26 @@
                     </div>
                 </div>
                 
-                <div class="detail-item">
+                {% comment %} <div class="detail-item">
                     <div class="detail-icon">📅</div>
                     <div class="detail-content">
                         <span class="detail-label">Submitted</span>
                         <span class="detail-value">{{ submission.timestamp|date:"M d, Y H:i" }}</span>
                     </div>
+                </div> {% endcomment %}
+
+                {% load tz %}
+                <div class="detail-item">
+                    <div class="detail-icon">📅</div>
+                    <div class="detail-content">
+                        <span class="detail-label">Submitted</span>
+                        <span class="detail-value">
+                            {{ submission.timestamp|localtime|date:"M d, Y, g:i A" }}
+                            <small class="text-muted">({{ submission.timestamp|timesince }} ago)</small>
+                        </span>
+                    </div>
                 </div>
+
                 
                 <div class="detail-item">
                     <div class="detail-icon">👤</div>
