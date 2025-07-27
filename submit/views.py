@@ -57,9 +57,11 @@ def judge_submission(submission):
 
     submission.total_tests = total_tests
 
-    # Compile once for all test cases (for compiled languages)
+    # Handle different language types
     compile_result = None
+    
     if submission.language in ['cpp', 'c']:
+        # Compile once for compiled languages
         compile_result = compile_code_once(submission)
         if compile_result['success'] == False:
             # Handle compilation error for all test cases
@@ -76,8 +78,29 @@ def judge_submission(submission):
             submission.execution_time = 0
             submission.save()
             return
+    
+    elif submission.language in ['py', 'python']:
+        # Python doesn't need compilation, but validate syntax
+        try:
+            compile(submission.code, '<string>', 'exec')
+        except SyntaxError as e:
+            # Handle Python syntax errors
+            error_msg = f"Python Syntax Error: {str(e)}"
+            for test_case in test_cases:
+                TestResult.objects.create(
+                    submission=submission,
+                    test_case=test_case,
+                    user_output=error_msg,
+                    verdict='CE',
+                    execution_time=0,
+                )
+            submission.verdict = 'CE'
+            submission.passed_tests = 0
+            submission.execution_time = 0
+            submission.save()
+            return
 
-    # Run all test cases with the compiled executable
+    # Run all test cases
     for test_case in test_cases:
         result = run_single_test_optimized(submission, test_case, compile_result)
 
@@ -112,7 +135,7 @@ def judge_submission(submission):
     submission.execution_time = max_time
     submission.save()
 
-    # Cleanup compiled executable
+    # Cleanup compiled executable (only for compiled languages)
     if submission.language in ['cpp', 'c'] and compile_result:
         cleanup_executable(compile_result.get('executable_path'))
 
@@ -229,9 +252,12 @@ def run_single_test_optimized(submission, test_case, compile_result=None):
         if submission.language in ['cpp', 'c'] and compile_result:
             # Use pre-compiled executable
             output = run_compiled_code(compile_result['executable_path'], test_case.input_data, submission.problem.time_limit)
-        else:
-            # For Python, still need to create files each time
+        elif submission.language in ['py', 'python']:
+            # For Python, create files each time but optimize process
             output = run_code_python(submission.code, test_case.input_data, submission.problem.time_limit)
+        else:
+            # Fallback to general run_code function
+            output = run_code(submission.language, submission.code, test_case.input_data, submission.problem.time_limit)
         
         end_time = time.time()
         execution_time = int((end_time - start_time) * 1000)
@@ -328,7 +354,7 @@ def run_compiled_code(executable_path, input_data, time_limit_ms):
 
 
 def run_code_python(code, input_data, time_limit_ms):
-    """Execute Python code (still needs file creation each time)"""
+    """Execute Python code (optimized for Python)"""
     project_path = Path(settings.BASE_DIR)
     codes_dir = project_path / "codes"
     inputs_dir = project_path / "inputs"
@@ -356,7 +382,12 @@ def run_code_python(code, input_data, time_limit_ms):
                     input_file.write('\n')
 
         timeout_seconds = time_limit_ms / 1000.0
-        interpreter = "python" if platform.system() == "Windows" else "python3"
+        
+        # Use the correct Python interpreter based on platform
+        if platform.system() == "Windows":
+            interpreter = "python"
+        else:
+            interpreter = "python3"
 
         # Execute Python code
         with open(input_file_path, "r") as input_file:
@@ -407,134 +438,138 @@ def submission_result(request, submission_id):
     })
 
 
-# Legacy function kept for backward compatibility (not used in optimized version)
 def run_code(language, code, input_data, time_limit_ms):
-    """Legacy run_code function - kept for compatibility"""
-    if language == "py":
+    """Universal run_code function for all languages"""
+    
+    # Handle empty input
+    if input_data is None:
+        input_data = ""
+
+    # Route to appropriate language handler
+    if language in ['py', 'python']:
         return run_code_python(code, input_data, time_limit_ms)
-    else:
-        # For compiled languages, this shouldn't be called in optimized version
-        # but keeping for safety
-        project_path = Path(settings.BASE_DIR)
-        directories = ["codes", "inputs", "outputs"]
+    
+    # For compiled languages (C/C++)
+    project_path = Path(settings.BASE_DIR)
+    directories = ["codes", "inputs", "outputs"]
 
-        for directory in directories:
-            dir_path = project_path / directory
-            if not dir_path.exists():
-                dir_path.mkdir(parents=True, exist_ok=True)
-        
-        codes_dir = project_path / "codes"
-        inputs_dir = project_path / "inputs"
-        outputs_dir = project_path / "outputs"
+    for directory in directories:
+        dir_path = project_path / directory
+        if not dir_path.exists():
+            dir_path.mkdir(parents=True, exist_ok=True)
+    
+    codes_dir = project_path / "codes"
+    inputs_dir = project_path / "inputs"
+    outputs_dir = project_path / "outputs"
 
-        unique = str(uuid.uuid4())
-        code_file_name = f"{unique}.{language}"
-        input_file_name = f"{unique}.txt"
-        output_file_name = f"{unique}.txt"
+    unique = str(uuid.uuid4())
+    code_file_name = f"{unique}.{language}"
+    input_file_name = f"{unique}.txt"
+    output_file_name = f"{unique}.txt"
 
-        code_file_path = codes_dir / code_file_name
-        input_file_path = inputs_dir / input_file_name
-        output_file_path = outputs_dir / output_file_name
+    code_file_path = codes_dir / code_file_name
+    input_file_path = inputs_dir / input_file_name
+    output_file_path = outputs_dir / output_file_name
 
-        with open(code_file_path, "w") as code_file:
-            code_file.write(code)
-        
-        with open(input_file_path, "w", newline='') as input_file:
-            if input_data:
-                clean_input = input_data.replace('\r\n', '\n').replace('\r', '\n')
-                input_file.write(clean_input)
-                if not clean_input.endswith('\n'):
-                    input_file.write('\n')
+    with open(code_file_path, "w") as code_file:
+        code_file.write(code)
+    
+    with open(input_file_path, "w", newline='') as input_file:
+        if input_data:
+            clean_input = input_data.replace('\r\n', '\n').replace('\r', '\n')
+            input_file.write(clean_input)
+            if not clean_input.endswith('\n'):
+                input_file.write('\n')
 
-        timeout_seconds = time_limit_ms / 1000.0
+    timeout_seconds = time_limit_ms / 1000.0
 
-        try:
-            if language == "cpp":
-                if platform.system() == "Windows":
-                    executable_name = f"{unique}.exe"
-                    compiler = "g++"
-                else:
-                    executable_name = unique
-                    compiler = "clang++"
+    try:
+        if language == "cpp":
+            if platform.system() == "Windows":
+                executable_name = f"{unique}.exe"
+                compiler = "g++"
+            else:
+                executable_name = unique
+                compiler = "clang++"
 
-                executable_path = codes_dir / executable_name
+            executable_path = codes_dir / executable_name
 
-                compile_result = subprocess.run(
-                    [compiler, "-O2", str(code_file_path), "-o", str(executable_path)], 
-                    capture_output=True, 
+            compile_result = subprocess.run(
+                [compiler, "-O2", str(code_file_path), "-o", str(executable_path)], 
+                capture_output=True, 
+                text=True, 
+                timeout=30
+            )
+
+            if compile_result.returncode != 0:
+                return f"Error: {compile_result.stderr}"
+            
+            with open(input_file_path, "r") as input_file:
+                result = subprocess.run(
+                    [str(executable_path)], 
+                    stdin=input_file,
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE,
                     text=True, 
-                    timeout=30
-                )
-
-                if compile_result.returncode != 0:
-                    return f"Error: {compile_result.stderr}"
-                
-                with open(input_file_path, "r") as input_file:
-                    result = subprocess.run(
-                        [str(executable_path)], 
-                        stdin=input_file,
-                        stdout=subprocess.PIPE, 
-                        stderr=subprocess.PIPE,
-                        text=True, 
-                        timeout=timeout_seconds
-                    )
-                    
-                    if result.returncode == 0:
-                        return result.stdout
-                    else:
-                        return f"Error: {result.stderr}"
-
-            elif language == "c":
-                if platform.system() == "Windows":
-                    executable_name = f"{unique}.exe"
-                    compiler = "gcc"
-                else:
-                    executable_name = unique
-                    compiler = "clang"
-
-                executable_path = codes_dir / executable_name
-
-                compile_result = subprocess.run(
-                    [compiler, "-O2", str(code_file_path), "-o", str(executable_path)], 
-                    capture_output=True, 
-                    text=True, 
-                    timeout=30
+                    timeout=timeout_seconds
                 )
                 
-                if compile_result.returncode != 0:
-                    return f"Error: {compile_result.stderr}"
-                
-                with open(input_file_path, "r") as input_file:
-                    result = subprocess.run(
-                        [str(executable_path)], 
-                        stdin=input_file, 
-                        stdout=subprocess.PIPE, 
-                        stderr=subprocess.PIPE, 
-                        text=True, 
-                        timeout=timeout_seconds
-                    )
-                    
-                    if result.returncode == 0:
-                        return result.stdout
-                    else:
-                        return f"Error: {result.stderr}"
-                        
-        except subprocess.TimeoutExpired:
-            raise
-        except Exception as e:
-            return f"Error: {str(e)}"
-        finally:
-            for file_path in [code_file_path, input_file_path, output_file_path]:
-                try:
-                    if file_path.exists():
-                        file_path.unlink()
-                except:
-                    pass
+                if result.returncode == 0:
+                    return result.stdout
+                else:
+                    return f"Error: {result.stderr}"
 
-            if language in ["cpp", "c"]:
-                try:
-                    executable_path = codes_dir / (unique + (".exe" if platform.system() == "Windows" else ""))
-                    if executable_path.exists():
-                        executable_path.unlink()
-                except:
-                    pass
+        elif language == "c":
+            if platform.system() == "Windows":
+                executable_name = f"{unique}.exe"
+                compiler = "gcc"
+            else:
+                executable_name = unique
+                compiler = "clang"
+
+            executable_path = codes_dir / executable_name
+
+            compile_result = subprocess.run(
+                [compiler, "-O2", str(code_file_path), "-o", str(executable_path)], 
+                capture_output=True, 
+                text=True, 
+                timeout=30
+            )
+            
+            if compile_result.returncode != 0:
+                return f"Error: {compile_result.stderr}"
+            
+            with open(input_file_path, "r") as input_file:
+                result = subprocess.run(
+                    [str(executable_path)], 
+                    stdin=input_file, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE, 
+                    text=True, 
+                    timeout=timeout_seconds
+                )
+                
+                if result.returncode == 0:
+                    return result.stdout
+                else:
+                    return f"Error: {result.stderr}"
+                    
+    except subprocess.TimeoutExpired:
+        raise
+    except Exception as e:
+        return f"Error: {str(e)}"
+    finally:
+        for file_path in [code_file_path, input_file_path, output_file_path]:
+            try:
+                if file_path.exists():
+                    file_path.unlink()
+            except:
+                pass
+
+        if language in ["cpp", "c"]:
+            try:
+                executable_path = codes_dir / (unique + (".exe" if platform.system() == "Windows" else ""))
+                if executable_path.exists():
+                    executable_path.unlink()
+            except:
+                pass
