@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submission Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .verdict-AC { color: #28a745; font-weight: bold; }
+        .verdict-WA { color: #dc3545; font-weight: bold; }
+        .verdict-TLE { color: #fd7e14; font-weight: bold; }
+        .verdict-RTE { color: #6f42c1; font-weight: bold; }
+        .verdict-CE { color: #20c997; font-weight: bold; }
+        .test-result { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Submission Result</h1>
+    
+    <div>
+        <p><strong>Problem:</strong> {{ submission.problem.title }}</p>
+        <p><strong>Language:</strong> {{ submission.get_language_display }}</p>
+        <p><strong>Verdict:</strong> <span class="verdict-{{ submission.verdict }}">{{ submission.get_verdict_display }}</span></p>
+        <p><strong>Tests Passed:</strong> {{ submission.passed_tests }}/{{ submission.total_tests }}</p>
+        <p><strong>Execution Time:</strong> {{ submission.execution_time }}ms</p>
+        <p><strong>Submitted:</strong> {{ submission.timestamp }}</p>
+    </div>
+
+    <h2>Code</h2>
+    <pre>{{ submission.code }}</pre>
+    
+    <h2>Test Results</h2>
+    {% for result in test_results %}
+    <div class="test-result">
+        <p><strong>Test Case {{ forloop.counter }}:</strong> 
+           <span class="verdict-{{ result.verdict }}">{{ result.get_verdict_display }}</span>
+           ({{ result.execution_time }}ms)
+        </p>
+        {% if result.verdict != 'AC' %}
+        <p><strong>Your Output:</strong></p>
+        <pre>{{ result.user_output }}</pre>
+        {% if result.test_case.is_sample %}
+        <p><strong>Expected Output:</strong></p>
+        <pre>{{ result.test_case.expected_output }}</pre>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endfor %}
+    
+    <div style="margin-top: 30px;">
+        <a href="{% url 'problem_detail' submission.problem.id %}">← Back to Problem</a>
+        <a href="{% url 'problem_list' %}">All Problems</a>
+    </div>
+</body>
+</html>

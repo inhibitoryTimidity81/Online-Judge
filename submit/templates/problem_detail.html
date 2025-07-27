@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ problem.title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; }
+        .submit-btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>{{ problem.title }}</h1>
+    
+    <h2>Problem Description</h2>
+    <p>{{ problem.description|linebreaks }}</p>
+    
+    <h2>Input Format</h2>
+    <p>{{ problem.input_format|linebreaks }}</p>
+    
+    <h2>Output Format</h2>
+    <p>{{ problem.output_format|linebreaks }}</p>
+    
+    <h2>Constraints</h2>
+    <p>{{ problem.constraints|linebreaks }}</p>
+    
+    <h2>Sample Input</h2>
+    <pre>{{ problem.sample_input }}</pre>
+    
+    <h2>Sample Output</h2>
+    <pre>{{ problem.sample_output }}</pre>
+    
+    <div style="margin-top: 30px;">
+        <p><strong>Time Limit:</strong> {{ problem.time_limit }}ms</p>
+        <p><strong>Memory Limit:</strong> {{ problem.memory_limit }}MB</p>
+        <p><strong>Difficulty:</strong> {{ problem.get_difficulty_display }}</p>
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <a href="{% url 'submit_solution' problem.id %}">
+            <button class="submit-btn">Submit Solution</button>
+        </a>
+        <a href="{% url 'problem_list' %}">← Back to Problems</a>
+    </div>
+</body>
+</html>

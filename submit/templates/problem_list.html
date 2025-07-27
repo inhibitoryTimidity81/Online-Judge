@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problems</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .problem-card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .difficulty-easy { border-left: 5px solid #28a745; }
+        .difficulty-medium { border-left: 5px solid #ffc107; }
+        .difficulty-hard { border-left: 5px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>Problem List</h1>
+    {% for problem in problems %}
+    <div class="problem-card difficulty-{{ problem.difficulty }}">
+        <h3><a href="{% url 'problem_detail' problem.id %}">{{ problem.title }}</a></h3>
+        <p><strong>Difficulty:</strong> {{ problem.get_difficulty_display }}</p>
+        <p><strong>Time Limit:</strong> {{ problem.time_limit }}ms</p>
+        <p><strong>Memory Limit:</strong> {{ problem.memory_limit }}MB</p>
+    </div>
+    {% empty %}
+    <p>No problems available yet.</p>
+    {% endfor %}
+</body>
+</html>
