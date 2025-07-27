@@ -1,56 +1,573 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submission Result</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .verdict-AC { color: #28a745; font-weight: bold; }
-        .verdict-WA { color: #dc3545; font-weight: bold; }
-        .verdict-TLE { color: #fd7e14; font-weight: bold; }
-        .verdict-RTE { color: #6f42c1; font-weight: bold; }
-        .verdict-CE { color: #20c997; font-weight: bold; }
-        .test-result { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
-        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <h1>Submission Result</h1>
-    
-    <div>
-        <p><strong>Problem:</strong> {{ submission.problem.title }}</p>
-        <p><strong>Language:</strong> {{ submission.get_language_display }}</p>
-        <p><strong>Verdict:</strong> <span class="verdict-{{ submission.verdict }}">{{ submission.get_verdict_display }}</span></p>
-        <p><strong>Tests Passed:</strong> {{ submission.passed_tests }}/{{ submission.total_tests }}</p>
-        <p><strong>Execution Time:</strong> {{ submission.execution_time }}ms</p>
-        <p><strong>Submitted:</strong> {{ submission.timestamp }}</p>
+
+
+{% block title %}Submission Result - Online Judge{% endblock %}
+
+{% block content %}
+<div class="result-container">
+    <!-- Header Section -->
+    <div class="result-header">
+        <h1 class="result-title">📊 Submission Result</h1>
+        <div class="problem-info">
+            <span class="problem-badge">{{ submission.problem.title }}</span>
+        </div>
     </div>
 
-    <h2>Code</h2>
-    <pre>{{ submission.code }}</pre>
-    
-    <h2>Test Results</h2>
-    {% for result in test_results %}
-    <div class="test-result">
-        <p><strong>Test Case {{ forloop.counter }}:</strong> 
-           <span class="verdict-{{ result.verdict }}">{{ result.get_verdict_display }}</span>
-           ({{ result.execution_time }}ms)
-        </p>
-        {% if result.verdict != 'AC' %}
-        <p><strong>Your Output:</strong></p>
-        <pre>{{ result.user_output }}</pre>
-        {% if result.test_case.is_sample %}
-        <p><strong>Expected Output:</strong></p>
-        <pre>{{ result.test_case.expected_output }}</pre>
-        {% endif %}
-        {% endif %}
+    <!-- Main Submission Card -->
+    <div class="submission-card">
+        <div class="submission-header">
+            <div class="verdict-section">
+                <div class="verdict-main">
+                    <span class="verdict-label">Final Verdict</span>
+                    <span class="verdict verdict-{{ submission.verdict }}">
+                        {% if submission.verdict == 'AC' %}✅ {{ submission.verdict }}
+                        {% elif submission.verdict == 'WA' %}❌ {{ submission.verdict }}
+                        {% elif submission.verdict == 'TLE' %}⏰ {{ submission.verdict }}
+                        {% elif submission.verdict == 'CE' %}🔧 {{ submission.verdict }}
+                        {% elif submission.verdict == 'RTE' %}💥 {{ submission.verdict }}
+                        {% else %}{{ submission.verdict }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="score-section">
+                    <div class="score-circle">
+                        <span class="score-text">{{ submission.passed_tests }}/{{ submission.total_tests }}</span>
+                        <span class="score-label">Tests Passed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="submission-details">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-icon">💻</div>
+                    <div class="detail-content">
+                        <span class="detail-label">Language</span>
+                        <span class="detail-value">{{ submission.language|upper }}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-icon">⚡</div>
+                    <div class="detail-content">
+                        <span class="detail-label">Execution Time</span>
+                        <span class="detail-value">{{ submission.execution_time }}ms</span>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-icon">📅</div>
+                    <div class="detail-content">
+                        <span class="detail-label">Submitted</span>
+                        <span class="detail-value">{{ submission.timestamp|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-icon">👤</div>
+                    <div class="detail-content">
+                        <span class="detail-label">User</span>
+                        <span class="detail-value">
+                            {% if submission.user %}{{ submission.user.username }}
+                            {% else %}Anonymous{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    {% endfor %}
-    
-    <div style="margin-top: 30px;">
-        <a href="{% url 'problem_detail' submission.problem.id %}">← Back to Problem</a>
-        <a href="{% url 'problem_list' %}">All Problems</a>
+
+    <!-- Test Cases Section -->
+    <div class="test-cases-section">
+        <h2 class="section-title">🧪 Test Case Results</h2>
+        
+        {% for result in test_results %}
+        <div class="test-case-card">
+            <div class="test-case-header">
+                <div class="test-case-title">
+                    <span class="test-case-number">Test Case {{ forloop.counter }}</span>
+                    <span class="test-verdict verdict-{{ result.verdict }}">
+                        {% if result.verdict == 'AC' %}✅ {{ result.verdict }}
+                        {% elif result.verdict == 'WA' %}❌ {{ result.verdict }}
+                        {% elif result.verdict == 'TLE' %}⏰ {{ result.verdict }}
+                        {% elif result.verdict == 'CE' %}🔧 {{ result.verdict }}
+                        {% elif result.verdict == 'RTE' %}💥 {{ result.verdict }}
+                        {% else %}{{ result.verdict }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="test-case-time">
+                    <span class="time-badge">{{ result.execution_time }}ms</span>
+                </div>
+            </div>
+            
+            {% if result.verdict == 'AC' %}
+                <div class="success-message">
+                    <div class="success-icon">🎉</div>
+                    <span>Perfect! Your solution passed this test case.</span>
+                </div>
+            {% else %}
+                <div class="test-case-details">
+                    {% if result.user_output %}
+                        <div class="output-section">
+                            <h4 class="output-title">Your Output:</h4>
+                            <pre class="code-output user-output">{{ result.user_output }}</pre>
+                        </div>
+                    {% endif %}
+                    
+                    {% if result.test_case.is_sample %}
+                        <div class="output-section">
+                            <h4 class="output-title">Expected Output:</h4>
+                            <pre class="code-output expected-output">{{ result.test_case.expected_output }}</pre>
+                        </div>
+                        
+                        <div class="output-section">
+                            <h4 class="output-title">Input:</h4>
+                            <pre class="code-output input-output">{{ result.test_case.input_data }}</pre>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="no-results">
+            <div class="no-results-icon">📝</div>
+            <p>No test results available.</p>
+        </div>
+        {% endfor %}
     </div>
-</body>
-</html>
+
+    <!-- Action Buttons -->
+    <div class="action-section">
+        <a href="{% url 'submit_solution' submission.problem.id %}" class="btn btn-primary">
+            <span class="btn-icon">🔄</span>
+            Submit Again
+        </a>
+        <a href="{% url 'problem_detail' submission.problem.id %}" class="btn btn-secondary">
+            <span class="btn-icon">📋</span>
+            Back to Problem
+        </a>
+        <a href="{% url 'problem_list' %}" class="btn btn-secondary">
+            <span class="btn-icon">📚</span>
+            All Problems
+        </a>
+    </div>
+</div>
+
+<style>
+/* Container and Layout */
+.result-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header Section */
+.result-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.result-title {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.problem-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Main Submission Card */
+.submission-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+    border: 1px solid #e1e8ed;
+}
+
+.submission-header {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 25px;
+}
+
+.verdict-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.verdict-main {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.verdict-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.verdict {
+    padding: 12px 24px;
+    border-radius: 25px;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.verdict:hover {
+    transform: translateY(-2px);
+}
+
+.verdict-AC { 
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+.verdict-WA { 
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+}
+.verdict-TLE { 
+    background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+}
+.verdict-CE { 
+    background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+}
+.verdict-RTE { 
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+.verdict-MLE { 
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+}
+.verdict-PENDING { 
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.score-section {
+    display: flex;
+    align-items: center;
+}
+
+.score-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.score-text {
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.score-label {
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+/* Submission Details */
+.submission-details {
+    padding: 25px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.detail-icon {
+    font-size: 1.5rem;
+}
+
+.detail-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+/* Test Cases Section */
+.test-cases-section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.test-case-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid #e1e8ed;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.test-case-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.test-case-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.test-case-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.test-case-number {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.test-verdict {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.time-badge {
+    background: #e9ecef;
+    color: #495057;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.success-message {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    font-weight: 500;
+}
+
+.success-icon {
+    font-size: 1.5rem;
+}
+
+.test-case-details {
+    padding: 20px;
+}
+
+.output-section {
+    margin-bottom: 20px;
+}
+
+.output-title {
+    color: #495057;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.code-output {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
+}
+
+.user-output {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+}
+
+.expected-output {
+    border-left: 4px solid #28a745;
+    background: #f8fff8;
+}
+
+.input-output {
+    border-left: 4px solid #007bff;
+    background: #f8f9ff;
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+/* Action Buttons */
+.action-section {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+}
+
+.btn-icon {
+    font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .result-container {
+        padding: 15px;
+    }
+    
+    .result-title {
+        font-size: 2rem;
+    }
+    
+    .verdict-section {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .test-case-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .action-section {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 200px;
+        justify-content: center;
+    }
+}
+
+/* Custom Scrollbar */
+.code-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.code-output::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.code-output::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.code-output::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+{% endblock %}
