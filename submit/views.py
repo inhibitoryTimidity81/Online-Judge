@@ -518,6 +518,28 @@ def run_code(language, code, input_data, time_limit_ms):
                     return result.stdout
                 else:
                     return f"Error: {result.stderr}"
+        
+        elif language in ["py", "python"]:
+            # Python execution (backup handling)
+            if platform.system() == "Windows":
+                interpreter = "python"
+            else:
+                interpreter = "python3"
+
+            with open(input_file_path, "r") as input_file:
+                result = subprocess.run(
+                    [interpreter, str(code_file_path)], 
+                    stdin=input_file,
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE, 
+                    text=True, 
+                    timeout=timeout_seconds
+                )
+                
+                if result.returncode == 0:
+                    return result.stdout
+                else:
+                    return f"Error: {result.stderr}"
 
         elif language == "c":
             if platform.system() == "Windows":
@@ -553,6 +575,10 @@ def run_code(language, code, input_data, time_limit_ms):
                     return result.stdout
                 else:
                     return f"Error: {result.stderr}"
+        
+        else:
+            # Handle unknown languages
+            return f"Error: Unsupported language '{language}'"
                     
     except subprocess.TimeoutExpired:
         raise
