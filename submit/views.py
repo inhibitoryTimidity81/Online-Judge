@@ -239,10 +239,45 @@ def compile_code_once(submission):
         }
 
 
+# def preprocess_input_for_python(input_data):
+#     """
+#     Preprocess input data to make it compatible with Python's line-by-line input reading.
+#     Converts space-separated values on the same line to separate lines when appropriate.
+#     """
+#     if not input_data:
+#         return input_data
+    
+#     lines = input_data.strip().split('\n')
+#     processed_lines = []
+    
+#     for line in lines:
+#         line = line.strip()
+#         if not line:
+#             continue
+            
+#         # Split by spaces
+#         parts = line.split()
+        
+#         # If line has 2-5 numbers (likely parameters, not an array), split them
+#         if len(parts) >= 2 and len(parts) <= 5:
+#             # Check if all parts are integers
+#             try:
+#                 [int(part) for part in parts]
+#                 # If all are integers and not too many, split into separate lines
+#                 processed_lines.extend(parts)
+#             except ValueError:
+#                 # If not all integers, keep original line
+#                 processed_lines.append(line)
+#         else:
+#             # Keep arrays and single values as they are
+#             processed_lines.append(line)
+    
+#     return '\n'.join(processed_lines)
+
 def preprocess_input_for_python(input_data):
     """
     Preprocess input data to make it compatible with Python's line-by-line input reading.
-    Converts space-separated values on the same line to separate lines when appropriate.
+    Uses position-based logic to distinguish parameters from arrays.
     """
     if not input_data:
         return input_data
@@ -250,7 +285,7 @@ def preprocess_input_for_python(input_data):
     lines = input_data.strip().split('\n')
     processed_lines = []
     
-    for line in lines:
+    for i, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
@@ -258,21 +293,21 @@ def preprocess_input_for_python(input_data):
         # Split by spaces
         parts = line.split()
         
-        # If line has 2-5 numbers (likely parameters, not an array), split them
-        if len(parts) >= 2 and len(parts) <= 5:
-            # Check if all parts are integers
+        # FIRST LINE with 2-3 numbers: likely parameters (n, target, k, etc.)
+        if i == 0 and len(parts) >= 2 and len(parts) <= 5:
             try:
-                [int(part) for part in parts]
-                # If all are integers and not too many, split into separate lines
+                [float(part) for part in parts]
+                # Split first line parameters
                 processed_lines.extend(parts)
             except ValueError:
-                # If not all integers, keep original line
+                # Not all numbers, keep original
                 processed_lines.append(line)
         else:
-            # Keep arrays and single values as they are
+            # ALL OTHER LINES: keep as arrays/single values
             processed_lines.append(line)
     
     return '\n'.join(processed_lines)
+
 
 
 def run_batch_compiled(executable_path, test_cases, time_limit_ms):
