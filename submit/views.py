@@ -1,19 +1,16 @@
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpRequest
 from submit.forms import CodeSubmissionForm
 from django.conf import settings
 from submit.models import Problem, TestCase, TestResult, CodeSubmission
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib import messages
 import os
 import uuid
 import subprocess
 from pathlib import Path
 import platform
 import time
+from django.contrib.auth.decorators import login_required
+
 
 # Create your views here.
 
@@ -21,11 +18,12 @@ def problem_list(request):
     problems = Problem.objects.all().order_by('-created_at')
     return render(request, 'problem_list.html', {'problems': problems})
 
+
 def problem_detail(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
     return render(request, 'problem_detail.html', {'problem': problem})
 
-@login_required
+
 def submit_solution(request, problem_id):
     problem = get_object_or_404(Problem, id=problem_id)
 
@@ -48,52 +46,6 @@ def submit_solution(request, problem_id):
         'problem': problem
     })
 
-# Authentication Views
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('problem_list')
-    
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                next_url = request.GET.get('next', 'problem_list')
-                messages.success(request, f'Welcome {username}!')
-                return redirect(next_url)
-            else:
-                messages.error(request, 'Invalid username or password.')
-        else:
-            messages.error(request, 'Invalid username or password.')
-    else:
-        form = AuthenticationForm()
-    
-    return render(request, 'registration/login.html', {'form': form})
-
-def logout_view(request):
-    logout(request)
-    messages.info(request, 'You have been logged out.')
-    return redirect('problem_list')
-
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect('problem_list')
-    
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Account created for {username}!')
-            login(request, user)
-            return redirect('problem_list')
-    else:
-        form = UserCreationForm()
-    
-    return render(request, 'registration/register.html', {'form': form})
 
 def judge_submission(submission):
     """Main judging function"""
@@ -137,6 +89,7 @@ def judge_submission(submission):
     submission.passed_tests = passed_tests
     submission.execution_time = max_time
     submission.save()
+
 
 def run_single_test(submission, test_case):
     """Run code against a single test case"""
@@ -190,6 +143,7 @@ def run_single_test(submission, test_case):
             'time': 0, 
             'memory': 0,
         }
+
 
 def run_code(language, code, input_data, time_limit_ms):
     """Execute code with given input and time limit"""
@@ -351,6 +305,7 @@ def run_code(language, code, input_data, time_limit_ms):
             except:
                 pass
 
+
 def submission_result(request, submission_id):
     """Display submission results"""
     submission = get_object_or_404(CodeSubmission, id=submission_id)
@@ -359,4 +314,3 @@ def submission_result(request, submission_id):
         'submission': submission,
         'test_results': test_results  
     })
-
