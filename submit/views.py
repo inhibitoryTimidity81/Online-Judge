@@ -1,5 +1,4 @@
 
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpRequest
 from submit.forms import CodeSubmissionForm
@@ -18,8 +17,6 @@ import re
 
 
 # Create your views here.
-
-
 def problem_list(request):
     problems = Problem.objects.all().order_by('-created_at')
     return render(request, 'problem_list.html', {'problems': problems})
